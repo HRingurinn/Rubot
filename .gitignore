@@ -15,3 +15,7 @@ Cargo.lock
 .vscode
 .envrc.local
 *.env*
+
+# Added by cargo
+
+/target
