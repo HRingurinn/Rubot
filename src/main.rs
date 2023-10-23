@@ -1,6 +1,7 @@
 extern crate dotenv;
 extern crate serde_json;
 extern crate tokio;
+extern crate chrono;
 
 use serde::Deserialize;
 
@@ -29,7 +30,7 @@ use std::env;
 #[tokio::main]
 async fn main() {
   dotenv::dotenv().expect("Failed to load .env file");
-  let token = env::var("DISCORD_TOKEN").expect("Expected a token in the environment");
+  let _token = env::var("DISCORD_TOKEN").expect("Expected a token in the environment");
 
   if let Err(y) = malid().await {
     println!("error: {:?}", y);
@@ -53,16 +54,23 @@ async fn malid() -> Result<(), reqwest::Error> {
   return Ok(());
 }
 
-async fn class_room() -> Result<(), reqwest::Error>{
-  // TODO: get current date
-  let date = "2023-10-17";
+async fn class_room() -> Result<(), reqwest::Error> {
+  let date = chrono::Utc::now().date_naive();
+  // TODO: get a list of all classrooms with a timetable
   let class_room = "M101";
+
   let url = format!("https://utils.ru.is/api/calendars/{class_room}/day?date={date}");
   let time_slots: Vec<TimeSlot> = reqwest::get(url).await?.json::<Vec<TimeSlot>>().await?;
 
   let n = time_slots.iter().max_by(|a, b| a.end_time.cmp(&b.end_time));
 
   println!("M101:");
+
+  for booking in time_slots.iter() {
+      println!("{}", booking.course_code);
+      println!("{}", booking.start_time);
+      println!("{}", booking.end_time);
+  }
 
   match n {
     Some(course) => println!("last class at: {}", course.end_time),
