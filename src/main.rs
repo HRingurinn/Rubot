@@ -1,81 +1,23 @@
-extern crate dotenv;
-extern crate serde_json;
-extern crate tokio;
-extern crate chrono;
-
-use serde::Deserialize;
-
-#[derive(Deserialize, Debug)]
-#[serde(rename_all = "PascalCase")]
-struct MenuItem {
-  title: String,
-  date: String,
-  vegan_menu: String,
-  soup_of_the_day: String,
-}
-
-#[derive(Deserialize, Debug)]
-#[serde(rename_all = "PascalCase")]
-struct TimeSlot {
-  course_code: String, // TODO: find a way to mute rustAnalyser
-  course_name: String,
-  start_time: String,
-  end_time: String,
-  department_name: String,
-}
-
 mod command;
 use std::env;
 
 #[tokio::main]
 async fn main() {
-  dotenv::dotenv().expect("Failed to load .env file");
+  dotenvy::dotenv().expect("Failed to load .env file");
+
+  // TODO: Read rest of env tokens
   let _token = env::var("DISCORD_TOKEN").expect("Expected a token in the environment");
 
-  if let Err(y) = malid().await {
-    println!("error: {:?}", y);
+  let rooms = [
+    "M101", "M102", "M103", "M104", "M105", "M106", "M107", "M108", "M109", "M110", "M111", "M112", "M113", "M114",
+    "M115", "M116", "M117", "M118", "M119", "M120", "M121", "M122", "M123", "M124", "M201", "M208", "M209", "M325",
+    "M326", "V101", "V102", "V103", "V104", "V105", "V106", "V107", "V108", "V109", "V110", "V111", "V112", "V113",
+    "V114", "V116", "V117", "V118", "V201", "V206", "V207", "V209", "U201",
+  ];
+
+  for room in rooms {
+    if let Err(_y) = command::class_rooms::class_room(room.to_string()).await {
+      println!("{}", room);
+    }
   }
-  if let Err(y) = class_room().await {
-    println!("error: {:?}", y);
-  }
-}
-
-async fn malid() -> Result<(), reqwest::Error> {
-  let url = "https://prod-198.westeurope.logic.azure.com/workflows/cc7c4c7157b14d5ba688859712303172/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=cRM1huMwILXk-jf6xybnCcTRpnSxjKY53jFwwUGLx14";
-  let menu: Vec<MenuItem> = reqwest::get(url).await?.json::<Vec<MenuItem>>().await?;
-
-  for item in menu {
-    println!("{}:", item.date);
-    println!("Main: {}", item.title);
-    println!("Vegan: {}", item.vegan_menu);
-    println!("Soup of the Day: {}", item.soup_of_the_day);
-    println!("----------");
-  }
-  return Ok(());
-}
-
-async fn class_room() -> Result<(), reqwest::Error> {
-  let date = chrono::Utc::now().date_naive();
-  // TODO: get a list of all classrooms with a timetable
-  let class_room = "M101";
-
-  let url = format!("https://utils.ru.is/api/calendars/{class_room}/day?date={date}");
-  let time_slots: Vec<TimeSlot> = reqwest::get(url).await?.json::<Vec<TimeSlot>>().await?;
-
-  let n = time_slots.iter().max_by(|a, b| a.end_time.cmp(&b.end_time));
-
-  println!("M101:");
-
-  for booking in time_slots.iter() {
-      println!("{}", booking.course_code);
-      println!("{}", booking.start_time);
-      println!("{}", booking.end_time);
-  }
-
-  match n {
-    Some(course) => println!("last class at: {}", course.end_time),
-    None => println!("somthin wron"),
-  }
-
-  return Ok(());
 }
