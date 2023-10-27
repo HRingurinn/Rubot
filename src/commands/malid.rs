@@ -1,3 +1,6 @@
+use serenity::builder::CreateApplicationCommand;
+use serenity::model::prelude::interaction::application_command::CommandDataOption;
+
 use serde::Deserialize;
 
 #[derive(Deserialize, Debug)]
@@ -7,6 +10,14 @@ pub struct MenuItem {
   date: String,
   vegan_menu: String,
   soup_of_the_day: String,
+}
+
+pub fn run(_options: &[CommandDataOption]) -> String {
+  "Hey, I'm alive!".to_string()
+}
+
+pub fn register(command: &mut CreateApplicationCommand) -> &mut CreateApplicationCommand {
+  command.name("lunch").description("lunch.")
 }
 
 pub async fn this_weeks_menu() -> Result<Vec<MenuItem>, reqwest::Error> {

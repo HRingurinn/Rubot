@@ -1,23 +1,80 @@
-mod command;
+mod commands;
+
 use std::env;
+
+use serenity::async_trait;
+use serenity::model::application::command::Command;
+use serenity::model::application::interaction::{Interaction, InteractionResponseType};
+use serenity::model::gateway::Ready;
+use serenity::model::id::GuildId;
+use serenity::prelude::*;
+
+struct Handler;
+
+#[async_trait]
+impl EventHandler for Handler {
+    async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
+        if let Interaction::ApplicationCommand(command) = interaction {
+            println!("Received command interaction: {:#?}", command);
+
+            let content = match command.data.name.as_str() {
+                "ping" => commands::malid::run(&command.data.options),
+                "id" => commands::class_rooms::run(&command.data.options),
+                _ => "not implemented :(".to_string(),
+            };
+
+            if let Err(why) = command
+                .create_interaction_response(&ctx.http, |response| {
+                    response
+                        .kind(InteractionResponseType::ChannelMessageWithSource)
+                        .interaction_response_data(|message| message.content(content))
+                })
+                .await
+            {
+                println!("Cannot respond to slash command: {}", why);
+            }
+        }
+    }
+
+    async fn ready(&self, ctx: Context, ready: Ready) {
+        println!("{} is connected!", ready.user.name);
+
+        let guild_id = GuildId(
+            env::var("GUILD_ID")
+                .expect("Expected GUILD_ID in environment")
+                .parse()
+                .expect("GUILD_ID must be an integer"),
+        );
+
+        let commands = GuildId::set_application_commands(&guild_id, &ctx.http, |commands| {
+            commands
+                .create_application_command(|command| commands::malid::register(command))
+                .create_application_command(|command| commands::class_rooms::register(command))
+        })
+        .await;
+
+        println!("I now have the following guild slash commands: {:#?}", commands);
+
+    }
+}
 
 #[tokio::main]
 async fn main() {
-  dotenvy::dotenv().expect("Failed to load .env file");
+    // Configure the client with your Discord bot token in the environment.
+    dotenvy::dotenv().expect("Failed to load .env file");
+    let token = env::var("DISCORD_TOKEN").expect("Expected a token in the environment");
 
-  // TODO: Read rest of env tokens
-  let _token = env::var("DISCORD_TOKEN").expect("Expected a token in the environment");
+    // Build our client.
+    let mut client = Client::builder(token, GatewayIntents::empty())
+        .event_handler(Handler)
+        .await
+        .expect("Error creating client");
 
-  let rooms = [
-    "M101", "M102", "M103", "M104", "M105", "M106", "M107", "M108", "M109", "M110", "M111", "M112", "M113", "M114",
-    "M115", "M116", "M117", "M118", "M119", "M120", "M121", "M122", "M123", "M124", "M201", "M208", "M209", "M325",
-    "M326", "V101", "V102", "V103", "V104", "V105", "V106", "V107", "V108", "V109", "V110", "V111", "V112", "V113",
-    "V114", "V116", "V117", "V118", "V201", "V206", "V207", "V209", "U201",
-  ];
-
-  for room in rooms {
-    if let Err(_y) = command::class_rooms::class_room(room.to_string()).await {
-      println!("{}", room);
+    // Finally, start a single shard, and start listening to events.
+    //
+    // Shards will automatically attempt to reconnect, and will perform
+    // exponential backoff until it reconnects.
+    if let Err(why) = client.start().await {
+        println!("Client error: {:?}", why);
     }
-  }
 }
