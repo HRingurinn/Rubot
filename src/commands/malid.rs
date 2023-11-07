@@ -1,3 +1,4 @@
+use chrono::NaiveDate;
 use serenity::builder::CreateApplicationCommand;
 use serenity::model::prelude::interaction::application_command::CommandDataOption;
 
@@ -12,8 +13,36 @@ pub struct MenuItem {
   soup_of_the_day: String,
 }
 
-pub fn run(_options: &[CommandDataOption]) -> String {
-  "Hey, I'm alive!".to_string()
+fn format_week_menu(menu: Vec<MenuItem>) -> String {
+  let mut output = String::from("");
+  for dish in menu.iter() {
+    output += format_specific_day(dish).as_str();
+  }
+  return output;
+}
+
+fn format_specific_day(dish: &MenuItem) -> String {
+  let date = NaiveDate::parse_from_str(&dish.date, "%Y-%m-%d").expect("Error parsing lunch date");
+
+  format!("## {}:\n\t🍴 {}\n\t🥬 {}\n\t🍲 {}\n",
+      date.format("%A, %-d %b"),
+      dish.title, dish.vegan_menu,
+      dish.soup_of_the_day)
+}
+
+pub async fn run(options: &[CommandDataOption]) -> Result<String, String> {
+  let menu = this_weeks_menu().await.expect("Some error happend");
+
+  let output;
+
+  if options.len() > 0 {
+    output = String::from("");
+  } else {
+    output = format_week_menu(menu);
+  }
+
+
+  Ok(output)
 }
 
 pub fn register(command: &mut CreateApplicationCommand) -> &mut CreateApplicationCommand {

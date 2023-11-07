@@ -18,8 +18,8 @@ impl EventHandler for Handler {
             println!("Received command interaction: {:#?}", command);
 
             let content = match command.data.name.as_str() {
-                "ping" => commands::malid::run(&command.data.options),
-                "id" => commands::class_rooms::run(&command.data.options),
+                "lunch" => commands::malid::run(&command.data.options).await.expect("error"),
+                // "schedule" => commands::class_rooms::run(&command.data.options),
                 _ => "not implemented :(".to_string(),
             };
 
@@ -48,8 +48,8 @@ impl EventHandler for Handler {
 
         let commands = GuildId::set_application_commands(&guild_id, &ctx.http, |commands| {
             commands
-                .create_application_command(|command| commands::malid::register(command))
-                .create_application_command(|command| commands::class_rooms::register(command))
+            .create_application_command(|command| commands::malid::register(command))
+            .create_application_command(|command| commands::class_rooms::register(command))
         })
         .await;
 

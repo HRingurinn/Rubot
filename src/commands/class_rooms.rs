@@ -13,8 +13,8 @@ struct TimeSlot {
   department_name: String,
 }
 
-pub fn run(_options: &[CommandDataOption]) -> String {
-  "Hey, I'm alive!".to_string()
+pub async fn run(_options: &[CommandDataOption]) -> Result<String, String> {
+  Ok("Hey, I'm alive!".to_string())
 }
 
 pub fn register(command: &mut CreateApplicationCommand) -> &mut CreateApplicationCommand {
