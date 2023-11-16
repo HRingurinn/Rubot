@@ -51,3 +51,12 @@ pub async fn this_weeks_menu() -> Result<Vec<DailyMenu>, reqwest::Error> {
 
   return Ok(menu);
 }
+
+#[cfg(test)]
+mod tests {
+  #[test]
+  fn test_run() {
+    // TODO create a test for run
+    assert!(true);
+  }
+}
