@@ -1,6 +1,5 @@
-use chrono::{NaiveDate, Local, Datelike};
+use chrono::NaiveDate;
 use serenity::builder::CreateApplicationCommand;
-use serenity::model::prelude::command::CommandOptionType;
 use serenity::model::prelude::interaction::application_command::CommandDataOption;
 
 use serde::Deserialize;
@@ -9,9 +8,9 @@ use serde::Deserialize;
 #[serde(rename_all = "PascalCase")]
 pub struct DailyMenu {
   date: String,
-  #[serde(rename= "Title")]
+  #[serde(rename = "Title")]
   main_course: String,
-  #[serde(rename= "VeganMenu")]
+  #[serde(rename = "VeganMenu")]
   vegan_course: String,
   soup_of_the_day: String,
 }
@@ -25,52 +24,25 @@ fn format_week_menu(week_menu: Vec<DailyMenu>) -> String {
 }
 
 fn format_specific_day(menu: &DailyMenu) -> String {
-  let date = NaiveDate::parse_from_str(&menu.date, "%Y-%m-%d").expect("Error parsing lunch date");
+  let date = NaiveDate::parse_from_str(&menu.date, "%Y-%m-%d").expect("Expected a date");
 
-  format!("## {}:\n\t🍴 {}\n\t🥬 {}\n\t🍲 {}\n",
-      date.format("%A, %-d %b"),
-      menu.main_course,
-      menu.vegan_course,
-      menu.soup_of_the_day)
+  format!(
+    "## {}:\n\t🍴 {}\n\t🥬 {}\n\t🍲 {}\n",
+    date.format("%A, %-d %b"),
+    menu.main_course,
+    menu.vegan_course,
+    menu.soup_of_the_day
+  )
 }
 
-fn get_day_of_week() -> usize {
-  let today = Local::now();
-  today.weekday().num_days_from_monday() as usize
-}
+pub async fn run(_options: &[CommandDataOption]) -> Result<String, String> {
+  let week_menu = this_weeks_menu().await.expect("Some error happened");
 
-pub async fn run(options: &[CommandDataOption]) -> Result<String, String> {
-  let week_menu = this_weeks_menu().await.expect("Some error happend");
-
-  let output = match options.get(0)  {
-        Some(arg) => {
-          let value = arg.value.as_ref().expect("Error in argument").as_str().expect("Argument not of type str");
-          match value {
-            "week" => format_week_menu(week_menu),
-            _ => "Unknown argument".to_string(),
-          }
-        },
-        None => {
-          let weekday = get_day_of_week();
-          if weekday > week_menu.len() {
-            "No lunch today".to_string()
-          } else {
-            format_specific_day(&week_menu[weekday])
-          }
-        }
-    };
-
-  Ok(output)
+  Ok(format_week_menu(week_menu))
 }
 
 pub fn register(command: &mut CreateApplicationCommand) -> &mut CreateApplicationCommand {
-  command.name("lunch").description("lunch.").create_option(|option| {
-    option
-    .name("Argument")
-    .description("Currently implemented arguments: week")
-    .kind(CommandOptionType::String)
-    .required(false)
-  })
+  command.name("lunch").description("lunch.")
 }
 
 pub async fn this_weeks_menu() -> Result<Vec<DailyMenu>, reqwest::Error> {
