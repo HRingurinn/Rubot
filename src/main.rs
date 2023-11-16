@@ -73,6 +73,7 @@ async fn main() {
   //
   // Shards will automatically attempt to reconnect, and will perform
   // exponential backoff until it reconnects.
+  // TODO: REMOVE THIS COMMENT, ITS JUST HERE FOR TESTING CI/CD
   if let Err(why) = client.start().await {
     println!("Client error: {:?}", why);
   }
