@@ -3,7 +3,6 @@ mod commands;
 use std::env;
 
 use serenity::async_trait;
-use serenity::model::application::command::Command;
 use serenity::model::application::interaction::{Interaction, InteractionResponseType};
 use serenity::model::gateway::Ready;
 use serenity::model::id::GuildId;
@@ -18,8 +17,9 @@ impl EventHandler for Handler {
       println!("Received command interaction: {:#?}", command);
 
       let content = match command.data.name.as_str() {
-        "ping" => commands::malid::run(&command.data.options),
-        "id" => commands::class_rooms::run(&command.data.options),
+        "lunch" => commands::malid::run(&command.data.options)
+          .await
+          .expect("Error in lunch command"),
         _ => "not implemented :(".to_string(),
       };
 
@@ -27,7 +27,7 @@ impl EventHandler for Handler {
         .create_interaction_response(&ctx.http, |response| {
           response
             .kind(InteractionResponseType::ChannelMessageWithSource)
-            .interaction_response_data(|message| message.content(content))
+            .interaction_response_data(|message| message.content(content).ephemeral(true))
         })
         .await
       {
@@ -73,7 +73,6 @@ async fn main() {
   //
   // Shards will automatically attempt to reconnect, and will perform
   // exponential backoff until it reconnects.
-  // TODO: REMOVE THIS COMMENT, ITS JUST HERE FOR TESTING CI/CD
   if let Err(why) = client.start().await {
     println!("Client error: {:?}", why);
   }
