@@ -1,61 +1,10 @@
 mod commands;
 
+use poise::serenity_prelude as serenity;
 use std::env;
 
-use serenity::async_trait;
-use serenity::model::application::interaction::{Interaction, InteractionResponseType};
-use serenity::model::gateway::Ready;
-use serenity::model::id::GuildId;
-use serenity::prelude::*;
-
-struct Handler;
-
-#[async_trait]
-impl EventHandler for Handler {
-  async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
-    if let Interaction::ApplicationCommand(command) = interaction {
-      println!("Received command interaction: {:#?}", command);
-
-      let content = match command.data.name.as_str() {
-        "lunch" => commands::malid::run(&command.data.options)
-          .await
-          .expect("Error in lunch command"),
-        _ => "not implemented :(".to_string(),
-      };
-
-      if let Err(why) = command
-        .create_interaction_response(&ctx.http, |response| {
-          response
-            .kind(InteractionResponseType::ChannelMessageWithSource)
-            .interaction_response_data(|message| message.content(content).ephemeral(true))
-        })
-        .await
-      {
-        println!("Cannot respond to slash command: {}", why);
-      }
-    }
-  }
-
-  async fn ready(&self, ctx: Context, ready: Ready) {
-    println!("{} is connected!", ready.user.name);
-
-    let guild_id = GuildId(
-      env::var("GUILD_ID")
-        .expect("Expected GUILD_ID in environment")
-        .parse()
-        .expect("GUILD_ID must be an integer"),
-    );
-
-    let commands = GuildId::set_application_commands(&guild_id, &ctx.http, |commands| {
-      commands
-        .create_application_command(|command| commands::malid::register(command))
-        .create_application_command(|command| commands::class_rooms::register(command))
-    })
-    .await;
-
-    println!("I now have the following guild slash commands: {:#?}", commands);
-  }
-}
+type Error = Box<dyn std::error::Error + Send + Sync>;
+type Context<'a> = poise::Context<'a, (), Error>;
 
 #[tokio::main]
 async fn main() {
@@ -63,17 +12,23 @@ async fn main() {
   dotenvy::dotenv().expect("Failed to load .env file");
   let token = env::var("DISCORD_TOKEN").expect("Expected a token in the environment");
 
-  // Build our client.
-  let mut client = Client::builder(token, GatewayIntents::empty())
-    .event_handler(Handler)
-    .await
-    .expect("Error creating client");
+  let framework = poise::Framework::builder()
+    .options(poise::FrameworkOptions {
+      commands: vec![commands::malid::lunch()],
+      ..Default::default()
+    })
+    .token(token)
+    .intents(serenity::GatewayIntents::empty())
+    .setup(|ctx, _ready, framework| {
+      Box::pin(async move {
+        println!("Logged in as {}", _ready.user.name);
+        poise::builtins::register_globally(ctx, &framework.options().commands).await?;
+        Ok(())
+      })
+    });
 
-  // Finally, start a single shard, and start listening to events.
-  //
-  // Shards will automatically attempt to reconnect, and will perform
-  // exponential backoff until it reconnects.
-  if let Err(why) = client.start().await {
-    println!("Client error: {:?}", why);
+  match framework.run().await {
+    Ok(v) => v,
+    Err(e) => panic!("{}", e),
   }
 }

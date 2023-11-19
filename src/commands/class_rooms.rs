@@ -1,3 +1,5 @@
+use poise::serenity_prelude as serenity;
+
 use serenity::builder::CreateApplicationCommand;
 use serenity::model::prelude::interaction::application_command::CommandDataOption;
 
