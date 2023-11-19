@@ -46,7 +46,9 @@ async fn this_weeks_menu() -> Result<Vec<DailyMenu>, reqwest::Error> {
 pub async fn lunch(ctx: Context<'_>) -> Result<(), Error> {
   let week_menu = this_weeks_menu().await?;
 
-  ctx.say(format_week_menu(week_menu)?).await?;
+  let msg = format_week_menu(week_menu)?;
+  ctx.send(|b| b.content(msg).ephemeral(true)).await?;
+
   Ok(())
 }
 
