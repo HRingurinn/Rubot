@@ -16,7 +16,7 @@ pub struct DailyMenu {
 }
 
 fn format_week_menu(week_menu: Vec<DailyMenu>) -> String {
-  let mut output = String::from("");
+  let mut output = String::new();
   for menu in week_menu.iter() {
     output += format_specific_day(menu).as_str();
   }
