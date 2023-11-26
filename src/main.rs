@@ -1,6 +1,7 @@
 mod commands;
 
 use poise::serenity_prelude as serenity;
+use serde_json::error;
 use std::env;
 
 type Error = Box<dyn std::error::Error + Send + Sync>;
@@ -14,7 +15,11 @@ async fn main() {
 
   let framework = poise::Framework::builder()
     .options(poise::FrameworkOptions {
-      commands: vec![commands::malid::lunch()],
+      commands: vec![
+        commands::malid::lunch(),
+        commands::rooms::schedule(),
+        commands::rooms::room(),
+      ],
       ..Default::default()
     })
     .token(token)
@@ -22,6 +27,7 @@ async fn main() {
     .setup(|ctx, _ready, framework| {
       Box::pin(async move {
         println!("Logged in as {}", _ready.user.name);
+        println!("Commands: {:?}", framework.options().commands);
         poise::builtins::register_globally(ctx, &framework.options().commands).await?;
         Ok(())
       })

@@ -1,2 +1,2 @@
-pub mod class_rooms;
+pub mod rooms;
 pub mod malid;
