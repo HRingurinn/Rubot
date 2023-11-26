@@ -1,2 +1,2 @@
-pub mod rooms;
 pub mod malid;
+pub mod rooms;

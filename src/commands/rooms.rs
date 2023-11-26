@@ -34,9 +34,7 @@ pub async fn room(
   for booking in time_slots.iter() {
     msg += &format!(
       "\t- {} {}-{}\n",
-      booking.course_code,
-      booking.start_time,
-      booking.end_time,
+      booking.course_code, booking.start_time, booking.end_time,
     )
     .to_string();
   }
