@@ -1,34 +1,38 @@
 mod commands;
 
+use anyhow::Context as _;
 use poise::serenity_prelude as serenity;
-use std::env;
+use shuttle_poise::ShuttlePoise;
+use shuttle_secrets::SecretStore;
 
+struct Data {}
 type Error = Box<dyn std::error::Error + Send + Sync>;
-type Context<'a> = poise::Context<'a, (), Error>;
+// type Context<'a> = poise::Context<'a, (), Error>;
+type Context<'a> = poise::Context<'a, Data, Error>;
 
-#[tokio::main]
-async fn main() {
-  // Configure the client with your Discord bot token in the environment.
-  dotenvy::dotenv().expect("Failed to load .env file");
-  let token = env::var("DISCORD_TOKEN").expect("Expected a token in the environment");
+#[shuttle_runtime::main]
+async fn poise(#[shuttle_secrets::Secrets] secret_store: SecretStore) -> ShuttlePoise<Data, Error> {
+  // Get the discord token set in `Secrets.toml`
+  let discord_token = secret_store
+    .get("DISCORD_TOKEN")
+    .context("'DISCORD_TOKEN' was not found")?;
 
   let framework = poise::Framework::builder()
     .options(poise::FrameworkOptions {
       commands: vec![commands::malid::lunch()],
       ..Default::default()
     })
-    .token(token)
-    .intents(serenity::GatewayIntents::empty())
+    .token(discord_token)
+    .intents(serenity::GatewayIntents::non_privileged())
     .setup(|ctx, _ready, framework| {
       Box::pin(async move {
-        println!("Logged in as {}", _ready.user.name);
         poise::builtins::register_globally(ctx, &framework.options().commands).await?;
-        Ok(())
+        Ok(Data {})
       })
-    });
+    })
+    .build()
+    .await
+    .map_err(shuttle_runtime::CustomError::new)?;
 
-  match framework.run().await {
-    Ok(v) => v,
-    Err(e) => panic!("{}", e),
-  }
+  Ok(framework.into())
 }
