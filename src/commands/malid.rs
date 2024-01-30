@@ -47,7 +47,7 @@ pub async fn lunch(ctx: Context<'_>) -> Result<(), Error> {
   let week_menu = this_weeks_menu().await?;
 
   let msg = format_week_menu(week_menu)?;
-  ctx.send(|b| b.content(msg).ephemeral(true)).await?;
+  ctx.send(|b| b.content(msg).ephemeral(false)).await?;
 
   Ok(())
 }
